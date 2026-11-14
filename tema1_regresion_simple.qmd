@@ -17,8 +17,9 @@ execute:
 
 ### Ejercicio 1: Fundamentos Conceptuales
 
-Basándote en el texto, explica con tus propias palabras por qué un coeficiente de correlación de Pearson ($r$) alto no es suficiente para modelar una relación y por qué la regresión lineal es un paso más allá. Menciona al menos dos cosas que el modelo de regresión proporciona y que la correlación por sí sola no ofrece. 
+Basándote en el texto, explica con tus propias palabras por qué un coeficiente de correlación de Pearson ($r$) alto no es suficiente para modelar una relación y por qué la regresión lineal es un paso más allá. Menciona al menos dos cosas que el modelo de regresión proporciona y que la correlación por sí sola no ofrece.
 
+**Respuesta:** El coeficiente de correlación de Pearson demuestra que dos variables se mueven juntas, pero no demuestra causalidad ni explica cómo una vble determina la otra. Con la regresión lineal tenemos capacidad de predicción y podemos ver cuánto cambia una vble al modificar otra gracias a la interpretación de los parámetros
 
 ### Ejercicio 2: Interpretación de Coeficientes
 
@@ -26,58 +27,156 @@ Un analista ajusta un modelo para predecir el gasto anual en compras online (`ga
 
 `gasto = 1500 + 12 * edad`
 
-a) ¿Cuál es el gasto predicho para un cliente de 30 años?
-b) Interpreta el significado de la pendiente (12) en el contexto específico de este problema. 
-c) Interpreta el significado del intercepto (1500). ¿Crees que esta interpretación tiene sentido práctico en el mundo real? ¿Por qué? 
+a)  ¿Cuál es el gasto predicho para un cliente de 30 años?
+
+    **Respuesta:** 1860€
+
+b)  Interpreta el significado de la pendiente (12) en el contexto específico de este problema.
+
+    **Respuesta:** Por cada año que incrementa la `edad`, aumenta 12€ el consumo anual en compras online.
+
+c)  Interpreta el significado del intercepto (1500). ¿Crees que esta interpretación tiene sentido práctico en el mundo real? ¿Por qué?
+
+    **Respuesta:** Significaría que a una `edad` de 0 años el `gasto` sería de 1500€ anuales, sin embargo esta interpretación pierde sentido en el mundo real ya que un ser humano con 0 años no puede realizar compras online, además seguramente estamos extrapolando fuera del rango de edades observadas.
 
 ### Ejercicio 3: Aplicación Práctica con R (Ajuste e Inferencia)
 
 Utiliza el conjunto de datos `pressure` de R, que contiene mediciones de temperatura y presión de vapor de mercurio.
 
-a) Ajusta un modelo de regresión lineal simple para predecir la presión (`pressure`) en función de la temperatura (`temperature`). Guarda el modelo en un objeto.
-b) Utiliza la función `summary()` sobre el objeto del modelo.
-c) Interpreta el valor del **coeficiente de determinación R²**. ¿Qué porcentaje de la variabilidad de la presión es explicado por la temperatura? 
-d) Interpreta el **p-valor del estadístico F**. ¿Es el modelo útil en su conjunto? 
-e) ¿Es el coeficiente de la temperatura estadísticamente significativo a un nivel de $\alpha = 0.05$? Justifica tu respuesta basándote en el p-valor del test t. 
+a)  Ajusta un modelo de regresión lineal simple para predecir la presión (`pressure`) en función de la temperatura (`temperature`). Guarda el modelo en un objeto.
 
+    ```{r}
+    modelo_presion <- lm(pressure ~ temperature, data = pressure)
+
+    ```
+
+b)  Utiliza la función `summary()` sobre el objeto del modelo.
+
+    ```{r}
+    summary(modelo_presion)
+
+    ```
+
+c)  Interpreta el valor del **coeficiente de determinación R²**. ¿Qué porcentaje de la variabilidad de la presión es explicado por la temperatura?
+
+    El 57,42% de la variabilidad es explicada por la temperatura.
+
+d)  Interpreta el **p-valor del estadístico F**. ¿Es el modelo útil en su conjunto?
+
+    El p-valor del estadístico F es menor que 0,05, lo que significa que rechazamos la hipótesis nula de que todos los coeficientes son iguales a cero, por lo que podemos decir que el modelo es útil en su conjunto.
+
+e)  ¿Es el coeficiente de la temperatura estadísticamente significativo a un nivel de $\alpha = 0.05$? Justifica tu respuesta basándote en el p-valor del test t.
+
+    Dado que este p-valor es menor que $\alpha$ , podemos decir que si es significativo (rechazamos la hipótesis nula de que es cero)
 
 ### Ejercicio 4: Intervalos de Confianza y Predicción
 
 Usando el modelo del ejercicio anterior (`lm(pressure ~ temperature, data = pressure)`):
 
-a) Calcula el **intervalo de confianza al 95%** para la *presión media* esperada cuando la temperatura es de 250 grados. 
-b) Calcula el **intervalo de predicción al 95%** para la presión de una *única y nueva* medición realizada a 250 grados. 
-c) ¿Cuál de los dos intervalos es más ancho? Explica la razón teórica de esta diferencia.
+a)  Calcula el **intervalo de confianza al 95%** para la *presión media* esperada cuando la temperatura es de 250 grados.
 
+    ```{r}
+    predict(modelo_presion, newdata = data.frame(temperature = 250), interval = "confidence", level = 0.95)
+    ```
+
+b)  Calcula el **intervalo de predicción al 95%** para la presión de una *única y nueva* medición realizada a 250 grados.
+
+    ```{r}
+    predict(modelo_presion, newdata = data.frame(temperature = 250), interval = "prediction", level = 0.95)
+    ```
+
+c)  predict(modelo_presion, newdata = data.frame(temperature = 250), interval = "prediction", level = 0.95)¿Cuál de los dos intervalos es más ancho? Explica la razón teórica de esta diferencia.
+
+    El intervalo de predicción siempre es más ancho que el de confianza porque tiene que sumar dos fuentes de error: la incertidumbre al estimar la propia recta y la variabilidad aleatoria intrínseca de una observación nueva e individual.
 
 ### Ejercicio 5: Supuestos del Modelo
 
 Enumera los cuatro supuestos del modelo de regresión lineal clásico (también conocidos como supuestos de Gauss-Markov) y explica brevemente la importancia de cada uno.
 
+1.  **Linealidad en los parámetros:** La relación entre la variable predictora y el valor esperado de la variable respuesta es, en promedio, una línea recta ($E[Y_i \vert{} X_i] = \beta_0 + \beta_1 X_i$).
+
+    Es el supuesto fundamental sobre la forma funcional del modelo. Si no se cumple, el modelo será estructuralmente incapaz de capturar la forma real de los datos, produciendo predicciones sesgadas y cometiendo errores sistemáticos.
+
+2.  **Independencia de los errores:** El error asociado a una observación no está correlacionado de ninguna forma con el error de cualquier otra observación ($Cov(\varepsilon_i, \varepsilon_j) = 0$ para $i \neq j$).
+
+    Su violación (conocida como autocorrelación) hace que el modelo subestime la verdadera incertidumbre, falseando las medidas de precisión estadística.
+
+<!-- -->
+
+3.  **Homocedasticidad:** La varianza de los errores (la dispersión alrededor de la recta) es constante a lo largo de todos los valores de las variables predictoras ($Var(\varepsilon_i \vert{} X_i) = \sigma^2$).
+
+    Es crucial para el cálculo correcto de la incertidumbre. Si existe heterocedasticidad (varianza no constante), los errores estándar calculados para los coeficientes serán incorrectos, lo que invalida completamente los p-valores, los contrastes de hipótesis y los intervalos de confianza.
+
+4.  **Normalidad de los errores:** Los errores se distribuyen siguiendo una distribución Normal con media nula y la varianza constante mencionada ($\varepsilon_i \sim N(0, \sigma^2)$).
+
+    Aunque no es necesario para que el método de estimación encuentre la mejor recta, es un requisito estrictamente necesario para poder realizar cualquier inferencia estadística válida con el modelo (calcular intervalos de confianza o realizar pruebas t y F para determinar la significancia).
+
 ### Ejercicio 6: Diagnóstico de Linealidad y Homocedasticidad
 
 Para el modelo del ejercicio 3:
 
-a) Genera y muestra el gráfico de **Residuos vs. Valores Ajustados**. Basándote en este gráfico, ¿se cumple el supuesto de **linealidad**? Explica en qué te basas.
-b) Genera y muestra el gráfico **Scale-Location**. Basándote en este gráfico, ¿se cumple el supuesto de **homocedasticidad**? Describe el patrón que indicaría un problema de heterocedasticidad.
+a)  Genera y muestra el gráfico de **Residuos vs. Valores Ajustados**. Basándote en este gráfico, ¿se cumple el supuesto de **linealidad**? Explica en qué te basas.
+
+    ```{r}
+    plot(modelo_presion, which = 1)
+    ```
+
+    En este caso se viola el supuesto de linealidad ya que el gráfico muestra un patrón parabólico.
+
+b)  Genera y muestra el gráfico **Scale-Location**. Basándote en este gráfico, ¿se cumple el supuesto de **homocedasticidad**? Describe el patrón que indicaría un problema de heterocedasticidad.
+
+    ```{r}
+    plot(modelo_presion, which = 3)
+    ```
 
 ### Ejercicio 7: Diagnóstico de Normalidad
 
 Para el modelo del ejercicio 3:
 
-a) Genera un gráfico **Normal Q-Q** de los residuos. ¿Parecen seguir los residuos una distribución normal?
-b) Realiza un **test de Shapiro-Wilk** sobre los residuos del modelo. ¿Qué concluyes a partir del p-valor? 
+a)  Genera un gráfico **Normal Q-Q** de los residuos. ¿Parecen seguir los residuos una distribución normal?
+
+    ```{r}
+    plot(modelo_presion, which = 2)
+    ```
+
+b)  Realiza un **test de Shapiro-Wilk** sobre los residuos del modelo. ¿Qué concluyes a partir del p-valor?
+
+    ```{r}
+    shapiro.test(residuals(modelo_presion))
+    ```
+
+El p-valor está por debajo del nivel de significancia típico de 0.05. Esto nos lleva a rechazar la hipótesis nula, concluyendo estadísticamente que los residuos no siguen una distribución normal.
 
 ### Ejercicio 8: Descomposición de la Varianza (ANOVA)
 
-Explica qué representan la **Suma de Cuadrados Total (SST)**, la **Suma de Cuadrados de la Regresión (SSR)** y la **Suma de Cuadrados del Error (SSE)**. ¿Cuál es la ecuación fundamental que las relaciona? 
+Explica qué representan la **Suma de Cuadrados Total (SST)**, la **Suma de Cuadrados de la Regresión (SSR)** y la **Suma de Cuadrados del Error (SSE)**. ¿Cuál es la ecuación fundamental que las relaciona?
+
+**Suma de Cuadrados Total (SST):** Mide la variabilidad total de los datos observados alrededor de su media, estableciendo la referencia base de la dispersión total que el modelo intenta explicar.
+
+**Suma de Cuadrados de la Regresión (SSR):** Representa la parte de la variabilidad total que logra ser explicada por el modelo, cuantificando cuánto se desvían las predicciones del modelo respecto a la media general.
+
+**Suma de Cuadrados del Error (SSE):** Mide la variabilidad residual que el modelo no es capaz de capturar, cuantificando la dispersión de los puntos reales alrededor de la recta de regresión ajustada.
+
+La relación matemática, conocida como la descomposición fundamental de la varianza o ecuación de ANOVA, es **SST = SSR + SSE**.
 
 ### Ejercicio 9: Observaciones Influyentes
 
 Basado en la teoría de los apuntes:
 
-a) Explica la diferencia entre un residuo simple ($e_i$), un residuo estandarizado y un residuo estudentizado. ¿Por qué se prefieren los estudentizados para el diagnóstico? 
-b) ¿Qué mide el **leverage** ($h_{ii}$)? ¿Y la **distancia de Cook** ($D_i$)? ¿Puede una observación tener un leverage alto y no ser influyente?
+a)  Explica la diferencia entre un residuo simple ($e_i$), un residuo estandarizado y un residuo estudentizado. ¿Por qué se prefieren los estudentizados para el diagnóstico?
+    - **Residuo simple (**$e_i$): Es la diferencia directa entre el valor observado y el predicho ($y_i - \hat{y}_i$). Su principal limitación es que no tienen la misma varianza (incluso bajo homocedasticidad) porque esta depende del leverage de cada observación, lo que hace que no sean directamente comparables entre sí.
+
+    - **Residuo estandarizado:** Mitiga el problema de la varianza desigual dividiendo el residuo simple por la raíz de su varianza teórica ($\sqrt{MSE(1 - h_{ii})}$), colocándolos en una escala común para facilitar la comparación.
+
+    - **Residuo estudentizado:** Mejora la estandarización calculando el Error Cuadrático Medio ($MSE_{(-i)}$) excluyendo la observación específica que se está evaluando.
+
+      Se prefieren porque eliminan el sesgo de autoinfluencia (al excluir la observación de su propia evaluación), evitan que un valor extremo (outlier) contamine el cálculo del MSE global, y siguen una distribución teórica exacta (t de Student) que permite definir umbrales de detección estadísticamente precisos.
+b)  ¿Qué mide el **leverage** ($h_{ii}$)? ¿Y la **distancia de Cook** ($D_i$)? ¿Puede una observación tener un leverage alto y no ser influyente?
+    - **Leverage (**$h_{ii}$): Mide cuán atípico es el valor de la variable predictora ($X_i$) de una observación respecto al centro de los datos.
+
+    - **Distancia de Cook (**$D_i$): Mide la influencia global de una observación combinando simultáneamente su apalancamiento y su magnitud de residuo. Representa numéricamente cuánto cambiarían los coeficientes estimados del modelo si se eliminara esa observación en particular.
+
+    - **¿Puede tener leverage alto y no ser influyente?** Sí. Un leverage alto únicamente indica que la observación tiene el *potencial* para ser influyente debido a su valor raro en $X$. Si esta observación de alto leverage tiene un residuo pequeño (es decir, su valor de $Y$ está exactamente donde la recta de regresión espera que esté), no ejercerá una atracción indebida sobre la recta y no alterará mucho los coeficientes, por lo que no será influyente.
 
 ### Ejercicio 10: Relación entre Pruebas de Hipótesis
 
