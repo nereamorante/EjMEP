@@ -1,0 +1,197 @@
+---
+title: "Ejercicios: Regresión Lineal Múltiple"
+subtitle: "Modelos Estadísticos de Predicción"
+author: "Víctor Aceña Gil - Isaac Martín de Diego"
+date: today
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    theme: cosmo
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+### Ejercicio 1: Conceptual (Interpretación *Ceteris Paribus*)
+
+Un analista ajusta dos modelos para predecir el consumo de un coche (`mpg`):
+
+1.  `lm(mpg ~ wt)` obtiene un coeficiente para `wt` de -5.3.
+2.  `lm(mpg ~ wt + hp)` obtiene un coeficiente para `wt` de -3.8.
+
+Explica detalladamente por qué el coeficiente para la variable `wt` (peso) cambia al añadir la variable `hp` (caballos de fuerza). ¿Cuál de los dos coeficientes representa el efecto "puro" o "aislado" del peso? Fundamenta tu respuesta en el principio de ***ceteris paribus***.
+
+En el modelo de regresión lineal simple el coeficiente de `wt` captura también la influencia de más variables, un coche de más peso suele tener también más caballos y más potencia. Sin embargo en el de regresión múltiple aisla su efecto manteniendo constante `hp`, fundamentandose en el principio de "ceteris paribus" (todo lo demás igual) 
+
+### Ejercicio 2: Práctico (Ajuste e Interpretación de un Modelo Múltiple)
+
+Usa el conjunto de datos `iris` de R. Queremos modelar la anchura del pétalo (`Petal.Width`) en función de la longitud del pétalo (`Petal.Length`) y la anchura del sépalo (`Sepal.Width`).
+
+  a) Ajusta un modelo de regresión lineal múltiple: `lm(Petal.Width ~ Petal.Length + Sepal.Width, data = iris)`.
+```{r}
+modelo_rlm <- lm(Petal.Width ~ Petal.Length + Sepal.Width, data = iris)
+summary(modelo_rlm)
+
+```
+  
+  b) Interpreta el coeficiente estimado para `Petal.Length`.
+  Significa que con una anchura de sépalo constante, por cada unidad que aumente la longitud del pétalo, se estima que su anchura aumente en 0.42627 unidades.
+  c) Interpreta el coeficiente estimado para `Sepal.Width`.
+  Significa que con una longitud del pétalo constante, por cada unidad que aumente la anchura del sépalo, se estima que la longitud del pétalo aumente en 0.09940 unidades.
+  d) Interpreta el intercepto del modelo. ¿Tiene un significado práctico en este contexto biológico?
+  Representa la anchura predicha del pétalo cuando tanto la longitud del pétalo como la anchura del sépalo son 0 cm. No tiene significado práctico porque no existen longitudes negativas, ni tampoco angucha y longitud cero.
+
+
+### Ejercicio 3: Conceptual (R² vs. R² Ajustado)
+
+Cuando pasamos de un modelo simple a uno múltiple, introducimos el **R² ajustado** como medida de bondad de ajuste.
+
+  a) ¿Cuál es el principal problema de usar el R² tradicional para comparar modelos con diferente número de predictores?
+  El coeficiente $\R^2$ siempre aumenta (o permanece estable) al incluir más variables en el modelo aunque no aporten más información, por lo que no es útil para comparar modelos con distinto número de variables ya que siempre va a favorecer al modelo que más tenga.
+  
+  b) ¿Cómo soluciona el R² ajustado este problema? Explica qué "penalización" introduce en su fórmula.
+
+  El R² ajustado penaliza la complejidad del modelo introduciendo un factor de ajuste que depende del número de predictores:
+
+$$R^2_{adj} = 1 - \frac{(1-R^2)(n-1)}{n-p-1}$$ ($n$ es el número de observaciones y $p$ el número de predictores)
+
+Esto consigue que el $\R^2$ ajustado pueda disminuir si añadimos predictores que no mejoran suficientemente el ajuste.
+
+### Ejercicio 4: Interpretación de Salidas de R
+
+Te presentan el siguiente resumen de un modelo que predice el prestigio de una ocupación (`prestige`) en función de los ingresos (`income`) y el nivel educativo (`education`).
+
+```
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -6.0647    4.2750   -1.419   0.1595    
+income       0.0013    0.0003    4.524   1.9e-05 ***
+education    4.1832    0.3887   10.762   < 2e-16 ***
+
+Multiple R-squared:  0.79,	Adjusted R-squared:  0.785 
+F-statistic: 185.6 on 2 and 99 DF,  p-value: < 2.2e-16
+```
+
+  a) ¿Es el modelo globalmente significativo? ¿En qué te basas?
+  Sí, el p-valor del estadístico F es <0.05, por tanto rechazamos la hipótesis nula de que todos los coeficientes son 0, y por tanto el modelo es globalmente significativo.
+  b) ¿Son los predictores `income` y `education` individualmente significativos, después de controlar por el efecto del otro? Justifica tu respuesta.
+  Sí, su p-valor individual es <0.05, por tanto rechazamos la hipótesis nula de que cada coeficiente es cero y por tanto son significativos.
+  c) Explica la diferencia conceptual entre lo que evalúa el **test F global** y lo que evalúan los **tests t individuales** en este modelo.
+  El test F global evalua si el modelo en conjunto es mejor que no tener modelo, es decir establece como hipótesis nula que todos los coeficientes son cero. Los test t individuales evaluan si cada variable es significativa controlada por las demás variables, establece como hipótesis nula que su coeficiente es cero.
+
+
+
+### Ejercicio 5: Conceptual (Multicolinealidad)
+
+Describe con tus propias palabras qué es la **multicolinealidad**. Menciona tres consecuencias negativas que puede tener la multicolinealidad severa en un modelo de regresión y si afecta más a la **predicción** o a la **inferencia**.
+
+Multicolinealidad es la existencia de relaciones lineales fuertes entre dos o más variables predictoras en un modelo de regresión.
+
+- Inestabilidad de los coeficientes: Pequeños cambios en los datos pueden causar grandes cambios en las estimaciones de los coeficientes.
+
+- Errores estándar inflados: Los errores estándar de los coeficientes se vuelven muy grandes, dificultando detectar efectos significativos.
+
+- Dificultad interpretativa: Los coeficientes individuales pierden significado claro porque las variables están confundidas entre sí.
+
+La multicolinealidad afecta más a la inferencia que a la predicción. Las predicciones pueden seguir siendo buenas, pero la interpretación de los coeficientes se vuelve problemática.
+
+### Ejercicio 6: Práctico (Diagnóstico de Multicolinealidad)
+
+Usa el dataset `mtcars`. Ajusta un modelo para predecir el consumo (`mpg`) usando como predictores el número de cilindros (`cyl`), la cilindrada (`disp`), los caballos de fuerza (`hp`) y el peso (`wt`).
+
+  a) Observa el `summary()` del modelo. ¿Hay alguna variable que, a pesar de tener una alta correlación simple con `mpg`, no resulte significativa en el modelo múltiple?
+  
+```{r}
+modelo_coches <- lm( mpg ~ cyl + disp + hp + wt, data = mtcars)
+summary(modelo_coches)
+cor_matrix <- cor(mtcars[c("mpg", "cyl", "disp", "hp", "wt")])
+print(round(cor_matrix, 2))
+```
+   Las variables `cyl` y `disp` tienen correlaciones altas con mpg individualmente, sin embargo en el modelo multilineal no aparecen como significativas, seguramente debido a la multicolinealidad entre predictores.
+  
+  b) Carga la librería `car` y calcula el **Factor de Inflación de la Varianza (VIF)** para cada predictor.
+  
+```{r}
+library(car)
+valores_vif <- vif(modelo_coches)
+print(valores_vif)
+```
+  
+  c) Basándote en los valores del VIF, ¿qué variables presentan un problema de multicolinealidad? ¿Cuál es tu recomendación para simplificar el modelo?
+
+  Las variables `cyl` y `disp`presentan problemas de multicolinealidad, y concretamente el VIF de `disp`es mayor de 10, lo que implica que es severa, esto añadido a que presenta el p-valor menos significativo, nos hace pensar que es la principal candidata para eliminarla del modelo, la eliminamos y comprobamos si se reduce la multicolinealidad.
+  
+```{r}
+modelo_coches <- lm( mpg ~ cyl + hp + wt, data = mtcars)
+summary(modelo_coches)
+valores_vif <- vif(modelo_coches)
+print(valores_vif)
+```
+  
+  
+
+### Ejercicio 7: Teórico (Notación Matricial)
+
+  a) Escribe la fórmula del estimador de Mínimos Cuadrados Ordinarios ($\hat{\mathbf{\beta}}$) en notación matricial.
+
+  $$\hat{\beta} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}$$
+
+  b) ¿Qué supuesto fundamental del modelo de regresión múltiple garantiza que la matriz $(\mathbf{X}^T\mathbf{X})$ sea invertible?
+  El supuesto de no multicolinealidad perfecta garantiza que las columnas de $\mathbf{X}$ sean linealmente independientes, lo que asegura que $(\mathbf{X}^T\mathbf{X})$ sea invertible.
+
+
+### Ejercicio 8: Práctico (Gráficos de Regresión Parcial)
+
+Usa el dataset `Prestige` de la librería `car`.
+
+  a) Ajusta el modelo `lm(prestige ~ income + education + women, data = Prestige)`.
+```{r}
+modelo_p <- lm(prestige ~ income + education + women, data = Prestige)
+summary(modelo_p)
+```
+  
+  b) Genera los gráficos de regresión parcial (o "added-variable plots") para este modelo usando la función `avPlots(tu_modelo)`.
+```{r}
+avPlots(modelo_p)
+```
+  
+  c) Explica qué representa el gráfico para la variable `education`. ¿Qué significan los ejes X e Y de ese gráfico específico? ¿A qué corresponde la pendiente de la línea en ese gráfico?
+
+En el eje X se muestran los residuos de `education`después de regresionarla con las demas variables, y en el eje Y los de `prestige` de igual forma. La pendiente es el coeficiente de `education` en el modelo. Es decir, la gráfica muetsra la relación “pura” entre education y prestige, eliminando el efecto de las otras variables.
+
+### Ejercicio 9: Inferencia (F-test vs. t-tests)
+
+Describe un escenario hipotético en el que el **test F global** de un modelo de regresión múltiple sea altamente significativo (p \< 0.001), pero **ninguno de los tests t individuales** para los coeficientes sea significativo. ¿Cuál es la causa estadística más probable de este fenómeno?
+
+Un modelo con multicolinealidad severa entre predictores podría tener un F-test significativo (porque el conjunto de variables sí explica la variabilidad) pero los t-tests no significativos (porque la multicolinealidad infla los errores estándar individuales). La multicolinealidad dificulta la determinación de la contribución individual de cada variable, pero el conjunto sí tiene poder predictivo. 
+Como ejemplo estarían el uso de `num_sesiones` y `horastotales_rehab` para predecir una mejora en `rango_flexion_rodilla`. Como las sesiones suelen tener una duración estandar, ambas variables presentan una correlación muy cercana a 1.
+
+### Ejercicio 10: Práctico (Comparación de Modelos Anidados)
+
+Usa el dataset `swiss`.
+
+  a) Ajusta un **modelo reducido** para predecir `Fertility` usando solo `Agriculture` y `Education`.
+  
+```{r}
+modelo_swiss <- lm(Fertility ~ Agriculture + Education, data = swiss)
+summary(modelo_swiss)
+```
+  
+  b) Ajusta un **modelo completo** que, además de las variables anteriores, incluya `Catholic` y `Infant.Mortality`.
+  
+```{r}
+modelo_swiss2 <- lm(Fertility ~ Agriculture + Education + Catholic + Infant.Mortality, data = swiss)
+summary(modelo_swiss2)
+```
+  
+  c) Utiliza la función `anova()` para comparar formalmente los dos modelos. ¿Aportan las variables `Catholic` y `Infant.Mortality` una mejora estadísticamente significativa al modelo? Interpreta el p-valor del test F resultante.
+  
+```{r}
+anova_test <- anova(modelo_swiss, modelo_swiss2)
+print(anova_test)
+```
+ El p-valor del test F es <0.05, rechazamos la hipótesis nula de que no hay diferencia entre los modelos. Por tanto, añadir las variables `Catholic` e `Infant.Mortality` aporta una mejora estadísticamente significativa al poder predictivo del modelo. Por lo tanto, debemos preferir el modelo completo. 
+  
