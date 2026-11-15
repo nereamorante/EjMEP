@@ -19,6 +19,17 @@ execute:
 
 El texto desaconseja fuertemente el enfoque de "ensayo y error" al aplicar transformaciones. Explica con tus propias palabras por qué la práctica de probar transformaciones hasta que mejore el R² es metodológicamente peligrosa. Menciona al menos tres de los riesgos específicos discutidos en los apuntes.
 
+Si en lugar de aplicar transformaciones en el modelo basándonos en la evidencia, aplicamos funciones matemáticas a ciegas, estamos ignorando el diagnóstico real del problema y esto supone un peligro por:
+
+1. Data snooping/p-hacking: Probar múltiples transformaciones hasta encontrar una que mejore el R² aumenta artificialmente la probabilidad de encontrar patrones espurios.
+
+2. Sobreajuste: El modelo resultante puede ajustarse específicamente a las peculiaridades de los datos de entrenamiento y no generalizar bien.
+
+3. Pérdida de interpretabilidad: Las transformaciones complejas pueden hacer que el modelo sea difícil de interpretar y comunicar.
+
+4. Invalidación de la inferencia estadística: Los p-valores y intervalos de confianza ya no son válidos cuando se ha hecho selección de modelos basada en los datos.
+
+5. Falta de justificación teórica: Sin una base conceptual, la transformación puede no tener sentido en el contexto del problema.
 
 
 ### Ejercicio 2: Práctico (Escalado de Variables)
@@ -26,19 +37,47 @@ El texto desaconseja fuertemente el enfoque de "ensayo y error" al aplicar trans
 Utiliza el dataset `iris` de R y céntrate en las cuatro variables predictoras continuas (`Sepal.Length`, `Sepal.Width`, `Petal.Length`, `Petal.Width`).
 
 a) Calcula la media y la desviación estándar de estas cuatro variables en su escala original. ¿Son sus escalas directamente comparables?
+
+```{r}
+head(iris)
+
+vbles_iris <- iris[, 1:4]
+est_orig <- data.frame(
+  Media = sapply(vbles_iris, mean),
+  Desv_Est = sapply(vbles_iris, sd)
+)
+
+print(round(est_orig, 3))
+```
+Al presentar dispersiones muy diferentes, las variables pierden comparabilidad directa.
+
 b) Crea un nuevo data frame donde hayas aplicado la **estandarización Z-Score** a estas cuatro variables. Verifica que las nuevas variables tienen una media cercana a 0 y una desviación estándar de 1.
+
+```{r}
+vbles_estand_iris <- as.data.frame(scale(vbles_iris))
+est_estand <- data.frame(
+  Media = sapply(vbles_estand_iris, mean),
+  Desv_Est = sapply(vbles_estand_iris, sd)
+)
+
+print(round(est_estand, 3))
+```
 c) ¿Por qué este paso de escalado es crucial antes de aplicar métodos de regularización como Ridge o Lasso, tal y como se menciona en el texto?
 
-
+El escalado es crucial para Ridge/Lasso porque estos métodos penalizan los coeficientes por su magnitud. Sin escalado, variables con escalas más grandes serían penalizadas más severamente, creando un sesgo artificial en la selección de variables.
 
 ### Ejercicio 3: Conceptual (Elección del Método de Escalado)
 
 Describe un escenario hipotético para cada uno de los siguientes casos, explicando por qué el método de escalado elegido sería el más apropiado:
 
 a) Un escenario donde la **estandarización Z-Score** es preferible.
-b) Un escenario donde la **normalización Min-Max** es preferible.
-c) Un escenario donde el **escalado robusto** (usando mediana y IQR) es necesario.
+Comparar el rendimiento en en una carrera de 5 km (medido en minutos) y en levantamiento de peso (medido en kilos), asumiendo que los resultados siguen una distribución normal.
 
+b) Un escenario donde la **normalización Min-Max** es preferible.
+El diseño de una aplicación de bienestar que combina los pasos diarios caminados (de 0 a una meta de 10.000) y los litros de agua bebidos (de 0 a 2.5) para rellenar una barra visual de "progreso general" que va del 0 % al 100 %.
+
+c) Un escenario donde el **escalado robusto** (usando mediana y IQR) es necesario.
+Un análisis del consumo de electricidad mensual de las viviendas de un barrio residencial, donde el 99 % de las familias tiene un gasto rutinario, pero una de las casas alberga una granja de servidores informáticos que genera un consumo energético desorbitado (outlier).
 
 
 ### Ejercicio 4: Práctico (Transformación para Linealizar)
@@ -46,28 +85,51 @@ c) Un escenario donde el **escalado robusto** (usando mediana y IQR) es necesari
 En el tema anterior vimos que la relación en el dataset `cars` (entre `speed` y `dist`) no era perfectamente lineal.
 
 a) Ajusta el modelo `lm(dist ~ speed, data = cars)` y genera el gráfico de residuos vs. valores ajustados para confirmar visualmente la no linealidad (patrón curvo).
+```{r}
+modelo_coches <- lm(dist ~ speed, data = cars)
+plot(modelo_coches, which = 1)
+```
+
 b) Los apuntes sugieren que la transformación logarítmica es útil para relaciones con "rendimientos decrecientes". Propón y aplica una transformación (ej. sobre el predictor, la respuesta, o ambos) para intentar linealizar la relación. Por ejemplo, ajusta `lm(log(dist) ~ speed, data = cars)`.
+```{r}
+modelo_coches_pot <- lm(dist ~ I(speed^2), data = cars)
+plot(modelo_coches_pot, which = 1)
+modelo_coches_log <- lm(log(dist) ~ speed, data = cars)
+plot(modelo_coches_log, which = 1)
+```
+
 c) Genera de nuevo el gráfico de residuos vs. valores ajustados para el nuevo modelo. Compara ambos diagnósticos. ¿Ha mejorado la linealidad?
 
-
+Sí, la linealidad ha mejorado notablemente con ambas transformaciones. Comparando los gráficos, tanto la transformación cuadrática del predictor como la logarítmica en la respuesta consiguen eliminar el patrón curvo de los residuos. La transformación logarítmica (log(dist)) parece producir una dispersión de residuos ligeramente más aleatoria y homogénea.
 
 ### Ejercicio 5: Práctico (Transformación de Box-Cox)
 
 Usa el dataset `Boston` de la librería `MASS`. La variable respuesta `medv` (valor mediano de la vivienda) es estrictamente positiva y tiene cierta asimetría.
 
 a) Carga la librería `MASS` y utiliza la función `boxcox()` para encontrar el valor de $\lambda$ óptimo para la variable `medv` en un modelo simple frente a `lstat`. La fórmula sería `boxcox(medv ~ lstat, data = Boston)`.
-b) Observando el gráfico que se genera, ¿a qué valor "simple" (como -1, 0, 0.5, 1) se aproxima el $\lambda$ óptimo?
-c) Basándote en este resultado, ¿cuál de las transformaciones clásicas (logarítmica, raíz cuadrada, inversa, etc.) sería la más recomendable para la variable `medv`?
+```{r}
+library(MASS)
+modelo_boston <- lm(medv ~ lstat, data = Boston)
+boxcox(modelo_boston)
+```
 
+b) Observando el gráfico que se genera, ¿a qué valor "simple" (como -1, 0, 0.5, 1) se aproxima el $\lambda$ óptimo?
+Se aproxima a 0.
+c) Basándote en este resultado, ¿cuál de las transformaciones clásicas (logarítmica, raíz cuadrada, inversa, etc.) sería la más recomendable para la variable `medv`?
+Debido a que tenemos un $\lambda = 0$, la transformacion sería log(medv)
+
+```{r}
+modelo_boston_log <- lm(log(medv) ~ lstat, data = Boston)
+```
 
 
 ### Ejercicio 6: Conceptual (Codificación de Variables Categóricas)
 
 Explica la diferencia fundamental entre la **Codificación Ordinal** y la **Codificación One-Hot**. Para cada una de las siguientes variables, indica qué método de codificación usarías y justifica tu elección:
 
-- `mes`: ("Enero", "Febrero", "Marzo", ...)
-- `nivel_riesgo`: ("Bajo", "Medio", "Alto", "Crítico")
-- `pais_origen`: ("España", "Francia", "Alemania", "Italia")
+- `mes`: ("Enero", "Febrero", "Marzo", ...) --> One-Hot porque tienen orden pero son cíclicos.
+- `nivel_riesgo`: ("Bajo", "Medio", "Alto", "Crítico") --> Ordinal porque mantienen un orden lógico
+- `pais_origen`: ("España", "Francia", "Alemania", "Italia") --> One-Hot porque no hay orden
 
 
 
@@ -76,8 +138,15 @@ Explica la diferencia fundamental entre la **Codificación Ordinal** y la **Codi
 Usa el dataset `mtcars` para investigar si el efecto del peso de un coche (`wt`) sobre su consumo (`mpg`) depende de su potencia (`hp`).
 
 a) Ajusta un modelo que incluya un término de interacción entre `wt` y `hp`. Escribe la fórmula en R.
+```{r}
+modelo_peso <- lm( mpg ~ wt*hp, data = mtcars)
+summary(modelo_peso)
+```
+
 b) Observa el `summary()` del modelo. ¿Es el término de interacción (`wt:hp`) estadísticamente significativo a un nivel de $\alpha = 0.05$?
+Sí
 c) Basándote en el signo del coeficiente de la interacción, ¿cómo cambia el efecto del peso sobre el consumo a medida que aumenta la potencia? (Es decir, ¿el efecto negativo del peso se hace más fuerte o más débil en los coches más potentes?).
+El coeficiente de la interacción wt:hp es positivo (+0.02785). Esto significa que a medida que hp (potencia) aumenta, el efecto negativo de wt (peso) sobre mpg (consumo) se vuelve menos negativo (más débil). 
 
 
 
@@ -88,20 +157,33 @@ Un investigador modela el salario (`salario`, en euros) en función de los años
 `salario = 30000 + 1200*experiencia + 8000*masterSi + 300*experiencia:masterSi`
 
 a) Escribe la ecuación de regresión específica para los empleados que **no tienen** un máster.
+`salario = 30000 + 1200*experiencia`
 b) Escribe la ecuación de regresión específica para los empleados que **sí tienen** un máster.
+`salario = 38000 + 1500*experiencia`
 c) Interpreta el coeficiente de la interacción (300). ¿Qué nos dice sobre el retorno económico de la experiencia para ambos grupos?
-
+Que por el hecho de tener un master se reciben 300€ más en la nómina al año (además de contar con una base 8000€ mayor).
 
 
 ### Ejercicio 9: Conceptual (Principio de Jerarquía)
 
 Explica el **principio de jerarquía** en el contexto de los modelos de regresión con interacciones. Si un modelo incluye el término de interacción `A:B`, ¿por qué es una buena práctica incluir siempre los efectos principales `A` y `B`, incluso si sus tests t individuales no son significativos?
 
+El principio de jerarquía establece que si incluimos un término de interacción A:B, debemos incluir siempre los efectos principales A y B, incluso si no son individualmente significativos.
 
+Razones:
+
+Interpretabilidad: Los términos de interacción representan desviaciones de los efectos principales. Sin los efectos principales, la interpretación se vuelve confusa.
+
+Estabilidad numérica: Los algoritmos de ajuste pueden volverse inestables sin los términos principales.
+
+Coherencia teórica: Desde una perspectiva conceptual, una interacción implica que existen efectos principales que se modifican mutuamente.
 
 ### Ejercicio 10: Conceptual (Ingeniería de Características Avanzada)
 
 Los apuntes discuten la creación de nuevas variables mediante **ratios** y **combinaciones**. Para cada uno de los siguientes escenarios, propón una nueva variable (feature) que podrías crear y explica qué relación podría capturar mejor que las variables originales por sí solas.
 
 a) Para predecir la rentabilidad de una tienda, tienes las variables `ventas_totales` y `numero_de_empleados`.
+eficiencia_empleado` = ventas_totales / numero_de_empleados, que mide la productividad por empleado, que puede ser mejor predictor de rentabilidad que las variables por separado, ya que considera tanto el volumen de negocio como la eficiencia operativa.
+
 b) Para predecir el riesgo de impago de un solicitante de préstamo, tienes las variables `ingresos_anuales` y `deuda_total`.
+`ratio_deuda_ingresos` = deuda_total / ingresos_anuales, mide la relación capturada: Capacidad de pago relativa. Un ratio alto indica mayor riesgo independientemente de los valores absolutos. Por ejemplo, 50,000€ de deuda es muy diferente con ingresos de 30,000€ vs 100,000€.
